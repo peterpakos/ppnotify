@@ -1,0 +1,37 @@
+name: Test
+
+on:
+  push:
+    branches-ignore: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14", "3.x"]
+    steps:
+      - uses: actions/checkout@v5
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Build
+        shell: bash
+        run: |
+          python -V
+          pip install -U pip setuptools wheel build pycodestyle
+          python -m build --sdist --wheel --outdir dist/ .
+          pip install .
+      - name: Test
+        shell: bash
+        run: |
+          pycodestyle --max-line-length=120 ppnotify
+          python -m ppnotify --version
+          python -m ppnotify --help
+          ppnotify --version
+          ppnotify --help
