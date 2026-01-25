@@ -18,7 +18,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import logging
+import random
 import requests
+from requests.exceptions import RequestException, Timeout
+import time
 
 from ppconfig import Config
 
@@ -36,54 +39,97 @@ class Teams:
         else:
             log.debug('Successfully obtained Teams webhook URL from config')
 
+    @staticmethod
+    def _post_with_retry(url, payload, headers=None, max_attempts=5, base_delay=1.0, timeout=5.0):
+        headers = headers or {'Content-Type': 'application/json'}
+        last_exception = None
+
+        for attempt in range(1, max_attempts + 1):
+            try:
+                response = requests.post(url, json=payload, headers=headers, timeout=timeout)
+
+                # Success
+                if response.status_code < 300:
+                    return response
+
+                # Rate limited or transient server error
+                if response.status_code in (429, 500, 502, 503, 504):
+                    raise RuntimeError(
+                        f'Retryable HTTP {response.status_code}: {response.text}'
+                    )
+
+                # Non-retryable client error
+                response.raise_for_status()
+
+            except (Timeout, RequestException, RuntimeError) as e:
+                last_exception = e
+
+                if attempt == max_attempts:
+                    raise
+
+                # Exponential backoff with jitter
+                sleep = base_delay * (2 ** (attempt - 1))
+                sleep += random.uniform(0, sleep * 0.1)
+
+                time.sleep(sleep)
+
+        # Defensive: should never be reached
+        raise RuntimeError("post_with_retry exited unexpectedly") from last_exception
+
     def send(self, sender, subject, message, code=False):
         body = []
 
-        message = message.replace('\n', '\n\n')
+        lines = [line.replace(' ', '\u00A0') for line in message.splitlines()]
 
         if sender:
             body.append({
-                "type": "TextBlock",
-                "text": sender,
-                "weight": "Lighter",
-                "size": "Small",
-                "wrap": True
+                'type': 'TextBlock',
+                'text': sender,
+                'weight': 'Lighter',
+                'size': 'Small',
+                'spacing': 'Default',
+                'wrap': True
             })
 
         if subject:
             body.append({
-                "type": "TextBlock",
-                "text": subject,
-                "weight": "Bolder",
-                # "size": "Large",
-                "wrap": True
+                'type': 'TextBlock',
+                'text': subject,
+                'weight': 'Bolder',
+                'size': 'Default',
+                'spacing': 'Default',
+                'wrap': True
             })
 
-        body.append({
-            "type": "TextBlock",
-            "text": message,
-            "wrap": True,
-            "FontType": "monospace" if code else "default"
-        })
+        for idx, line in enumerate(lines):
+            body.append({
+                'type': 'TextBlock',
+                'text': line,
+                'weight': 'Lighter',
+                'size': 'Small',
+                'spacing': 'None' if idx > 1 else 'Default',
+                'wrap': True,
+                'fontType': 'Monospace' if code else 'Default'
+            })
 
         payload = {
-            "type": "message",
-            "attachments": [
+            'type': 'message',
+            'attachments': [
                 {
-                    "contentType": "application/vnd.microsoft.card.adaptive",
-                    "content": {
-                        "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
-                        "type": "AdaptiveCard",
-                        "version": "1.5",
-                        "body": body,
-                        "msteams": {
-                            "width": "Full"
+                    'contentType': 'application/vnd.microsoft.card.adaptive',
+                    'content': {
+                        '$schema': 'http://adaptivecards.io/schemas/adaptive-card.json',
+                        'type': 'AdaptiveCard',
+                        'version': '1.5',
+                        'body': body,
+                        'msTeams': {
+                            'width': 'Full'
                         }
                     }
                 }
             ]
         }
 
-        requests.post(self._webhook_url, headers={'Content-Type': 'application/json'}, json=payload)
+        self._post_with_retry(self._webhook_url, payload)
 
-        return
+        return True
