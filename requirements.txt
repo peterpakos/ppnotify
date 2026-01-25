@@ -1,0 +1,4 @@
+pplogger
+ppconfig
+requests
+slack_sdk
