@@ -22,27 +22,32 @@ location can be overridden by setting environment variable `XDG_CONFIG_HOME`).
 The config file should look like this:
 ```
 [default]
-slack_key=xxx
-email_domain=example.com
+slack_key = xxx
+email_domain = example.com
+
+[teams]
+channel1 = https://url1.example.com
+channel2 = https://url2.example.com
 ```
 
 ## Usage - Help
 ```
 $ ppnotify --help
-usage: ppnotify [--version] [--help] [--debug] [--verbose] [-f SENDER] -t RECIPIENTS [RECIPIENTS ...] [-s SUBJECT] [-H]
+usage: ppnotify [--version] [--help] [--debug] [--verbose] [-m {slack,teams}] [-f SENDER] -t RECIPIENTS [RECIPIENTS ...] [-s SUBJECT] [-H]
 
-Tool to send Slack messages
+Tool to send notifications
 
 options:
   --version             show program's version number and exit
   --help                show this help message and exit
   --debug               debugging mode
   --verbose             verbose debugging mode
-  -f SENDER, --from SENDER
-                        sender
-  -t RECIPIENTS [RECIPIENTS ...], --to RECIPIENTS [RECIPIENTS ...]
+  -m, --method {slack,teams}
+                        notification method (default: teams)
+  -f, --from SENDER     sender
+  -t, --to RECIPIENTS [RECIPIENTS ...]
                         recipient
-  -s SUBJECT, --subject SUBJECT
+  -s, --subject SUBJECT
                         subject
   -H, --code            send code block
 ```
@@ -51,7 +56,7 @@ options:
 ```
 $ echo 'The king is dead, long live the king!' \
   | ppnotify -Hf 'Jon Snow' \
-  -t 'arya.stark@winterfell.com' \
+  -t 'game-of-thrones-channel' \
   -s 'Re: secret message'
 ```
 
@@ -63,7 +68,7 @@ slack = Slack()
 
 status = slack.send(
     sender='Jon Snow',
-    recipients=['arya.stark@winterfell.com'],
+    recipients=['game-of-thrones-channel'],
     subject='Re: secret message',
     message='The king is dead, long live the king!',
     code=True

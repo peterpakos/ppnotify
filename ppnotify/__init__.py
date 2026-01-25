@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from .slack import Slack
 from .__version__ import __version__
+from .slack import Slack
+from .teams import Teams
