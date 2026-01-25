@@ -1,0 +1,43 @@
+[project]
+name = "ppnotify"
+authors = [
+  {name = "Peter Pakos", email = "peter@pakos.uk"},
+]
+description = "Tool to send notifications"
+readme = "README.md"
+requires-python = ">=3.8"
+keywords = ["slack", "teams", "message", "notification", "notify"]
+license = {text = "GPLv3"}
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+  "Topic :: Communications :: Chat"
+]
+dependencies = [
+  "pplogger",
+  "ppconfig",
+  "slack_sdk",
+  "requests"
+]
+dynamic = ["version"]
+
+[project.urls]
+"GitHub" = "https://github.com/peterpakos/ppnotify/"
+"PyPI" = "https://pypi.org/project/ppnotify/"
+
+[project.scripts]
+ppnotify = "ppnotify.main:main"
+
+[tool.setuptools.dynamic]
+version = {attr = "ppnotify.__version__.__version__"}
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
