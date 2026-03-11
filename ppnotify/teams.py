@@ -79,7 +79,7 @@ class Teams:
     def send(self, sender, subject, message, code=False):
         body = []
 
-        lines = [line.replace(' ', '\u00A0') for line in message.splitlines()]
+        lines = ['\u00A0' if line == '' else line.replace(' ', '\u00A0') for line in message.splitlines()]
 
         if sender:
             body.append({
