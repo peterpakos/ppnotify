@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
 import random
+import re
 import requests
 from requests.exceptions import RequestException, Timeout
 import time
@@ -76,10 +77,21 @@ class Teams:
         # Defensive: should never be reached
         raise RuntimeError("post_with_retry exited unexpectedly") from last_exception
 
+    @staticmethod
+    def _url_replacer(match):
+        url = match.group(0)
+        return f'[{url}]({url})'
+
     def send(self, sender, subject, message, code=False):
         body = []
+        lines = []
 
-        lines = ['\n' if line == '' else line.replace(' ', '\u00A0') for line in message.splitlines()]
+        for line in message.splitlines():
+            if line == '':
+                lines.append('\n')
+            else:
+                line_with_links = re.sub(r'(https?://\S+)', self._url_replacer, line)
+                lines.append(line_with_links.replace(' ', '\u00A0'))
 
         if sender:
             body.append({
