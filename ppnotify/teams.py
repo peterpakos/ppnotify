@@ -80,6 +80,15 @@ class Teams:
     @staticmethod
     def _url_replacer(match):
         url = match.group(0)
+        # Check if the URL is already in [URL](URL) format
+        # Get the string being processed from match.string
+        start = match.start()
+        end = match.end()
+        before = match.string[max(0, start-1):start]
+        after = match.string[end:end+1]
+        # If the URL is already inside []() pattern, skip replacement
+        if before == '(' and after == ')':
+            return url
         return f'[{url}]({url})'
 
     def send(self, sender, subject, message, code=False):
@@ -90,8 +99,10 @@ class Teams:
             if line == '':
                 lines.append('\n')
             else:
-                line_with_links = re.sub(r'(https?://\S+)', self._url_replacer, line)
+                line_with_links = re.sub(r'(?<!]\()https?://\S+', self._url_replacer, line)
                 lines.append(line_with_links.replace(' ', '\u00A0'))
+
+        print(lines)
 
         if sender:
             body.append({
