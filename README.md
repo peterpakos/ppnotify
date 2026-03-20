@@ -26,8 +26,9 @@ slack_key = xxx
 email_domain = example.com
 
 [teams]
-channel1 = https://url1.example.com
-channel2 = https://url2.example.com
+webhook_url = https://url.example.com
+channel1 = team_id1,channel_id1
+channel2 = team_id2,channel_id2
 ```
 
 ## Usage - Help
