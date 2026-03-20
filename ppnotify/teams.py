@@ -33,12 +33,15 @@ class Teams:
     def __init__(self, channel):
         try:
             self._config = Config('ppnotify')
-            self._webhook_url = self._config.get(channel, section='teams')
+            self._webhook_url = self._config.get('webhook_url', section='teams')
+            channel_config = self._config.get(channel, section='teams')
+            self._team_id = channel_config.split(',')[0]
+            self._channel_id = channel_config.split(',')[1]
         except Exception as e:
             log.debug(e)
             raise
         else:
-            log.debug('Successfully obtained Teams webhook URL from config')
+            log.debug(f'Successfully initialized Teams configuration for channel: {channel}')
 
     @staticmethod
     def _post_with_retry(url, payload, headers=None, max_attempts=5, base_delay=1.0, timeout=5.0):
@@ -51,10 +54,12 @@ class Teams:
 
                 # Success
                 if response.status_code < 300:
+                    log.debug(f'POST successful on attempt #{attempt}: {response.status_code}')
                     return response
 
                 # Rate limited or transient server error
                 if response.status_code in (429, 500, 502, 503, 504):
+                    log.debug(f'POST failed on attempt #{attempt}: {response.status_code}')
                     raise RuntimeError(
                         f'Retryable HTTP {response.status_code}: {response.text}'
                     )
@@ -102,16 +107,15 @@ class Teams:
                 line_with_links = re.sub(r'(?<!]\()https?://\S+', self._url_replacer, line)
                 lines.append(line_with_links.replace(' ', '\u00A0'))
 
-        print(lines)
-
         if sender:
             body.append({
                 'type': 'TextBlock',
                 'text': sender,
                 'weight': 'Lighter',
                 'size': 'Small',
-                'spacing': 'Default',
-                'wrap': True
+                'spacing': 'None',
+                'wrap': True,
+                'isSubtle': True
             })
 
         if subject:
@@ -120,8 +124,9 @@ class Teams:
                 'text': subject,
                 'weight': 'Bolder',
                 'size': 'Default',
-                'spacing': 'Default',
-                'wrap': True
+                'spacing': 'ExtraSmall',
+                'wrap': True,
+                'separator': True
             })
 
         for idx, line in enumerate(lines):
@@ -130,27 +135,21 @@ class Teams:
                 'text': line,
                 'weight': 'Lighter',
                 'size': 'Small',
-                'spacing': 'None' if idx > 1 else 'Default',
+                'spacing': 'ExtraSmall' if idx == 0 else 'None',
                 'wrap': True,
                 'fontType': 'Monospace' if code else 'Default'
             })
 
         payload = {
-            'type': 'message',
-            'attachments': [
-                {
-                    'contentType': 'application/vnd.microsoft.card.adaptive',
-                    'content': {
-                        '$schema': 'http://adaptivecards.io/schemas/adaptive-card.json',
-                        'type': 'AdaptiveCard',
-                        'version': '1.5',
-                        'body': body,
-                        'msTeams': {
-                            'width': 'Full'
-                        }
-                    }
-                }
-            ]
+            '$schema': 'http://adaptivecards.io/schemas/adaptive-card.json',
+            'type': 'AdaptiveCard',
+            'version': '1.5',
+            'msTeams': {
+                'width': 'Full'
+            },
+            'body': body,
+            'teamId': self._team_id,
+            'channelId': self._channel_id
         }
 
         self._post_with_retry(self._webhook_url, payload)
