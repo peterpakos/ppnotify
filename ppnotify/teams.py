@@ -96,16 +96,17 @@ class Teams:
             return url
         return f'[{url}]({url})'
 
+    # Workaround for Teams Adaptive Cards: preserve indentation by
+    # prepending a zero-width space and replacing spaces with figure spaces
+    @staticmethod
+    def _preserve_indentation(line):
+        return '\u200B' + line.replace(' ', '\u00A0')
+
     def send(self, sender, subject, message, code=False):
         body = []
-        lines = []
 
-        for line in message.splitlines():
-            if line == '':
-                lines.append('\n')
-            else:
-                line_with_links = re.sub(r'(?<!]\()https?://\S+', self._url_replacer, line)
-                lines.append(line_with_links.replace(' ', '\u00A0'))
+        message = re.sub(r'(?<!]\()https?://\S+', self._url_replacer, message)
+        message = '   \n'.join(self._preserve_indentation(ln) for ln in message.splitlines())
 
         if sender:
             body.append({
@@ -123,19 +124,19 @@ class Teams:
                 'type': 'TextBlock',
                 'text': subject,
                 'weight': 'Bolder',
-                'size': 'Default',
+                'size': 'Small',
                 'spacing': 'ExtraSmall',
                 'wrap': True,
                 'separator': True
             })
 
-        for idx, line in enumerate(lines):
+        if message:
             body.append({
                 'type': 'TextBlock',
-                'text': line,
+                'text': message,
                 'weight': 'Lighter',
                 'size': 'Small',
-                'spacing': 'ExtraSmall' if idx == 0 else 'None',
+                'spacing': 'ExtraSmall',
                 'wrap': True,
                 'fontType': 'Monospace' if code else 'Default'
             })
