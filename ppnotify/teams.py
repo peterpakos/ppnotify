@@ -31,12 +31,21 @@ log = logging.getLogger(__name__)
 
 class Teams:
     def __init__(self, channel):
+        self._team_id = None
+        self._channel_id = None
+
         try:
             self._config = Config('ppnotify')
-            self._webhook_url = self._config.get('webhook_url', section='teams')
             channel_config = self._config.get(channel, section='teams')
-            self._team_id = channel_config.split(',')[0]
-            self._channel_id = channel_config.split(',')[1]
+
+            if channel_config.startswith('https://'):
+                self._webhook_url = channel_config
+                log.debug('Using dedicated webhook URL')
+            else:
+                self._webhook_url = self._config.get('webhook_url', section='teams')
+                self._team_id = channel_config.split(',')[0]
+                self._channel_id = channel_config.split(',')[1]
+                log.debug('Using default webhook URL, team ID and channel ID')
         except Exception as e:
             log.debug(e)
             raise
@@ -148,10 +157,12 @@ class Teams:
             'msTeams': {
                 'width': 'Full'
             },
-            'body': body,
-            'teamId': self._team_id,
-            'channelId': self._channel_id
+            'body': body
         }
+
+        if self._team_id and self._channel_id:
+            payload['teamId'] = self._team_id
+            payload['channelId'] = self._channel_id
 
         self._post_with_retry(self._webhook_url, payload)
 
