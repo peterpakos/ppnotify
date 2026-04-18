@@ -107,7 +107,7 @@ class Slack:
                 if user:
                     recipient_id = user['id']
             elif str(recipient).startswith('@'):
-                user = self.users[str(recipient).strip('@')]
+                user = self.users.get(str(recipient).strip('@'))
                 if user:
                     recipient_id = user['id']
             else:
