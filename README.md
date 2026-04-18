@@ -28,8 +28,11 @@ email_domain = example.com
 [teams]
 webhook_url = https://url.example.com
 channel1 = team_id1,channel_id1
-channel2 = team_id2,channel_id2
+channel2 = https://dedicated-webhook-url.example.com
 ```
+
+For Teams channels, the value can be either a `team_id,channel_id` pair (which uses the default `webhook_url`) or a
+dedicated `https://` webhook URL used directly for that channel.
 
 ## Usage - Help
 ```
@@ -54,6 +57,7 @@ options:
 ```
 
 ## Usage - CLI
+Send a Teams message (default method):
 ```
 $ echo 'The king is dead, long live the king!' \
   | ppnotify -Hf 'Jon Snow' \
@@ -61,7 +65,30 @@ $ echo 'The king is dead, long live the king!' \
   -s 'Re: secret message'
 ```
 
+Send a Slack message:
+```
+$ echo 'The king is dead, long live the king!' \
+  | ppnotify -m slack -Hf 'Jon Snow' \
+  -t 'game-of-thrones-channel' \
+  -s 'Re: secret message'
+```
+
 ## Usage - Python module
+Send a Teams message:
+```
+from ppnotify import Teams
+
+teams = Teams('game-of-thrones-channel')
+
+status = teams.send(
+    sender='Jon Snow',
+    subject='Re: secret message',
+    message='The king is dead, long live the king!',
+    code=True
+)
+```
+
+Send a Slack message:
 ```
 from ppnotify import Slack
 

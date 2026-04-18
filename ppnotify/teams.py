@@ -43,8 +43,10 @@ class Teams:
                 log.debug('Using dedicated webhook URL')
             else:
                 self._webhook_url = self._config.get('webhook_url', section='teams')
-                self._team_id = channel_config.split(',')[0]
-                self._channel_id = channel_config.split(',')[1]
+                parts = channel_config.split(',')
+                if len(parts) != 2:
+                    raise ValueError(f'Invalid channel config format: {channel_config!r}')
+                self._team_id, self._channel_id = parts
                 log.debug('Using default webhook URL, team ID and channel ID')
         except Exception as e:
             log.debug(e)
@@ -114,7 +116,7 @@ class Teams:
     def send(self, sender, subject, message, code=False):
         body = []
 
-        message = re.sub(r'(?<!]\()https?://\S+', self._url_replacer, message)
+        message = re.sub(r'(?<!]\()https?://[^\s)]+', self._url_replacer, message)
         message = '   \n'.join(self._preserve_indentation(ln) for ln in message.splitlines())
 
         if sender:
